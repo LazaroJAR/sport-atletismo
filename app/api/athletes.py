@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import athletics_read, athletics_write
 from app.db.session import get_db
 from app.models.athlete_mirror import AthleteMirror
-from app.models.athletics import Athlete
+from app.models.athletics import Athlete, Discipline
 from app.schemas.athlete import AthleteDeportistaCreate, AthleteRead, AthleteUpdate
 
 router = APIRouter(prefix="/athletes", tags=["atletismo-atletas"])
@@ -72,6 +72,9 @@ async def create_athlete(
         ))
         if ex:
             raise HTTPException(status.HTTP_409_CONFLICT, "Documento ya registrado como deportista")
+
+    if body.primary_discipline_id and not await db.get(Discipline, body.primary_discipline_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Disciplina no encontrada")
 
     now = datetime.now(timezone.utc)
     base = AthleteMirror(
