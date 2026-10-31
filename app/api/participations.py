@@ -3,20 +3,37 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import athletics_read, athletics_write
 from app.db.session import get_db
 from app.models.athletics import (
-    Athlete, Event, Participation, PerformanceSplit, ResultType,
+    Athlete, Event, Participation, ResultType,
 )
 from app.schemas.participation import (
     ParticipationCreate, ParticipationRead, ParticipationResultUpdate,
 )
+from app.models.athletics_stats import (
+    SeasonPlan, SeasonPlanEvent,
+)
+from app.services.athletics import SeasonPlanService
 
 router = APIRouter(prefix="/participations", tags=["atletismo-participaciones"])
 
+
+async def _recalc_plans_for_participation(db, athlete_id, event_id):
+    """Recalcula todos los planes del atleta que incluyen el evento."""
+    plans = (await db.execute(
+        select(SeasonPlan)
+        .join(SeasonPlanEvent, SeasonPlanEvent.season_plan_id == SeasonPlan.id)
+        .where(
+            SeasonPlan.athlete_id == athlete_id,
+            SeasonPlanEvent.event_id == event_id,
+        )
+    )).scalars().all()
+    for plan in plans:
+        await SeasonPlanService.recalculate(db, plan.id)
 
 
 @router.get("", response_model=list[ParticipationRead])
@@ -59,17 +76,14 @@ async def create_participation(
     if dup:
         raise HTTPException(status.HTTP_409_CONFLICT, "El atleta ya participa en este evento")
 
-    is_wind_legal = body.is_wind_legal
-    if is_wind_legal is None and body.wind_ms is not None:
-        is_wind_legal = abs(body.wind_ms) <= 2.0
-
     p = Participation(
-        **body.model_dump(exclude={"is_wind_legal"}),
-        is_wind_legal=is_wind_legal,
+        **body.model_dump(),
         status="valid",
         updated_at=datetime.now(timezone.utc),
     )
     db.add(p)
+    await db.flush()
+    await _recalc_plans_for_participation(db, p.athlete_id, p.event_id)
     await db.commit()
     await db.refresh(p)
     return p
@@ -101,9 +115,9 @@ async def update_participation_result(
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(p, k, v)
-    if "wind_ms" in data and "is_wind_legal" not in data and p.wind_ms is not None:
-        p.is_wind_legal = abs(p.wind_ms) <= 2.0
     p.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await _recalc_plans_for_participation(db, p.athlete_id, p.event_id)
     await db.commit()
     await db.refresh(p)
     return p

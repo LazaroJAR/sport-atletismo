@@ -43,7 +43,7 @@ class SuiteEvent(Base):
     event_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="championship")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class Discipline(Base):
@@ -132,7 +132,7 @@ class Athlete(Base):
     )
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     primary_discipline: Mapped["Discipline | None"] = relationship()
 
@@ -180,14 +180,13 @@ class Event(Base):
     # Condiciones ambientales compartidas por TODOS los participantes
     wind_ms: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)      # +2.1, -0.5, 0.0
     wind_direction: Mapped[str | None] = mapped_column(String(8), nullable=True)     # "N", "S", "E", "W", "NE"...
-    is_wind_legal: Mapped[bool | None] = mapped_column(Boolean, nullable=True)       # |wind| <= 2.0 m/s
     temperature_c: Mapped[float | None] = mapped_column(Numeric(4, 1), nullable=True)
     humidity_pct: Mapped[int | None] = mapped_column(Integer, nullable=True)
     track_condition: Mapped[str | None] = mapped_column(String(24), nullable=True)   # dry, wet, indoor
 
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relaciones
     suite_event: Mapped["SuiteEvent"] = relationship()
@@ -242,7 +241,6 @@ class Participation(Base):
     # Viento propio: necesario en saltos/lanzamientos donde cada intento tiene su lectura.
     # En pruebas de pista se deja NULL y se usa Event.wind_ms.
     wind_ms: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
-    is_wind_legal: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     # Logros
     is_personal_best: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -253,7 +251,7 @@ class Participation(Base):
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="valid")  # valid, dns, dnf, dsq
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relaciones
     event: Mapped["Event"] = relationship(back_populates="participations")

@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from app.schemas.literals import ParticipationStatus
 
@@ -20,7 +20,6 @@ class ParticipationCreate(BaseModel):
     reaction_time_ms: int | None = Field(default=None, ge=0, le=9999)
     is_photo_finish: bool | None = None
     wind_ms: float | None = Field(default=None, ge=-99.99, le=99.99)
-    is_wind_legal: bool | None = None
     notes: str | None = None
 
 
@@ -39,7 +38,6 @@ class ParticipationRead(BaseModel):
     reaction_time_ms: int | None
     is_photo_finish: bool | None
     wind_ms: float | None
-    is_wind_legal: bool | None
     is_personal_best: bool
     is_season_best: bool
     is_national_record: bool
@@ -59,7 +57,6 @@ class ParticipationResultUpdate(BaseModel):
     result_type_id: uuid.UUID | None = None
     status: ParticipationStatus = "valid"
     wind_ms: float | None = None
-    is_wind_legal: bool | None = None
     is_personal_best: bool | None = None
     is_season_best: bool | None = None
     is_national_record: bool | None = None
