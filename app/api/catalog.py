@@ -1,7 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import athletics_read, athletics_write
@@ -16,6 +17,17 @@ from app.schemas.catalog import (
 )
 
 router = APIRouter(tags=["atletismo-catalogo"])
+
+
+async def _create_unique(db: AsyncSession, obj, conflict: str):
+    db.add(obj)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, conflict)
+    await db.refresh(obj)
+    return obj
 
 
 @router.get("/suite-events", response_model=list[SuiteEventRead])
@@ -34,10 +46,7 @@ async def create_suite_event(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     e = SuiteEvent(**body.model_dump())
-    db.add(e)
-    await db.commit()
-    await db.refresh(e)
-    return e
+    return await _create_unique(db, e, "Ya existe un SuiteEvent con ese código")
 
 
 @router.get("/disciplines", response_model=list[DisciplineRead])
@@ -60,10 +69,7 @@ async def create_discipline(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     d = Discipline(**body.model_dump())
-    db.add(d)
-    await db.commit()
-    await db.refresh(d)
-    return d
+    return await _create_unique(db, d, "Ya existe una disciplina con ese código")
 
 
 @router.get("/age-categories", response_model=list[AgeCategoryRead])
@@ -82,10 +88,7 @@ async def create_age_category(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     ac = AgeCategory(**body.model_dump())
-    db.add(ac)
-    await db.commit()
-    await db.refresh(ac)
-    return ac
+    return await _create_unique(db, ac, "Ya existe una categoría de edad con ese código")
 
 
 @router.get("/regulations", response_model=list[RegulationRead])
@@ -104,10 +107,7 @@ async def create_regulation(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     reg = Regulation(**body.model_dump())
-    db.add(reg)
-    await db.commit()
-    await db.refresh(reg)
-    return reg
+    return await _create_unique(db, reg, "Ya existe un reglamento con ese código")
 
 
 @router.get("/result-types", response_model=list[ResultTypeRead])
@@ -126,7 +126,4 @@ async def create_result_type(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     rt = ResultType(**body.model_dump())
-    db.add(rt)
-    await db.commit()
-    await db.refresh(rt)
-    return rt
+    return await _create_unique(db, rt, "Ya existe un tipo de resultado con ese código")

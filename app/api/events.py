@@ -56,14 +56,8 @@ async def create_event(
     if body.age_category_id and not await db.get(AgeCategory, body.age_category_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Categoría de edad no encontrada")
 
-    # Derivar is_wind_legal si no viene explícito y hay wind_ms
-    is_wind_legal = body.is_wind_legal
-    if is_wind_legal is None and body.wind_ms is not None:
-        is_wind_legal = abs(body.wind_ms) <= 2.0
-
     ev = Event(
-        **body.model_dump(exclude={"is_wind_legal"}),
-        is_wind_legal=is_wind_legal,
+        **body.model_dump(),
         status="scheduled",
         updated_at=datetime.now(timezone.utc),
     )
@@ -116,9 +110,6 @@ async def update_event_conditions(
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(ev, k, v)
-    # Re-derivar validez de viento si cambió wind_ms y no se pasó explícito
-    if "wind_ms" in data and "is_wind_legal" not in data and ev.wind_ms is not None:
-        ev.is_wind_legal = abs(ev.wind_ms) <= 2.0
     ev.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(ev)

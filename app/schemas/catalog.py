@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from app.schemas.literals import DisciplineCategory, DisciplineSubCategory, ResultTypeCategory, ScopeType, SexType
 
 

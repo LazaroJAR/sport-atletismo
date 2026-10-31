@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from app.schemas.literals import EventStatus, RoundType
 
 
@@ -17,7 +17,6 @@ class EventCreate(BaseModel):
 
     wind_ms: float | None = Field(default=None, ge=-99.99, le=99.99)
     wind_direction: str | None = Field(default=None, max_length=8)
-    is_wind_legal: bool | None = None
     temperature_c: float | None = Field(default=None, ge=-30, le=60)
     humidity_pct: int | None = Field(default=None, ge=0, le=100)
     track_condition: str | None = Field(default=None, max_length=24)
@@ -36,7 +35,6 @@ class EventRead(BaseModel):
     status: str
     wind_ms: float | None
     wind_direction: str | None
-    is_wind_legal: bool | None
     temperature_c: float | None
     humidity_pct: int | None
     track_condition: str | None
@@ -53,7 +51,6 @@ class EventStatusUpdate(BaseModel):
 class EventConditionsUpdate(BaseModel):
     wind_ms: float | None = Field(default=None, ge=-99.99, le=99.99)
     wind_direction: str | None = None
-    is_wind_legal: bool | None = None
     temperature_c: float | None = None
     humidity_pct: int | None = Field(default=None, ge=0, le=100)
     track_condition: str | None = None
